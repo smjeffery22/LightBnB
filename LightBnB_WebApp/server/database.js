@@ -105,16 +105,79 @@ getAllReservations(1);
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function(options, limit = 10) {
+  // if (options.owner_id) {
+  //   const queryString = `
+  //   SELECT *
+  //   FROM properties
+  //   WHERE owner_id = $1
+  //   LIMIT $2`;
+  //   const values = [options.owner_id, limit];
+
+  //   return pool
+  //     .query(queryString, values)
+  //     .then((res) => res.rows[0])
+  //     .catch((err) => console.log(err.message));
+  // }
+  
+  
+  const queryParams = [];
+
+  let queryString = `
+    SELECT p.*, avg(pr.rating) AS average_rating
+    FROM properties AS p
+    JOIN property_reviews AS pr ON p.id = pr.property_id
+    WHERE 1 = 1
+  `
+  if (options.owner_id) {
+    queryParams.push(`${options.owner_id}`);
+    queryString += ` AND owner_id = $${queryParams.length}`
+  }
+  
+  if (options.city) {
+    queryParams.push(`%${options.city}%`);
+    queryString += ` AND city LIKE $${queryParams.length}`
+  }
+
+  if (options.minimum_price_per_night) {
+    queryParams.push(options.minimum_price_per_night * 100);
+    queryString += ` AND p.cost_per_night >= $${queryParams.length}`
+  }
+
+  if (options.maximum_price_per_night) {
+    queryParams.push(options.maximum_price_per_night * 100);
+    queryString += ` AND p.cost_per_night <= $${queryParams.length}`
+  }
+
+  queryString += `
+  GROUP BY p.id`
+
+  if (options.minimum_rating) {
+    queryParams.push(options.minimum_rating);
+    queryString += `HAVING avg(pr.rating) >= $${queryParams.length}`
+  }
+
+  queryParams.push(limit);
+  queryString += `
+    ORDER BY p.cost_per_night
+    LIMIT $${queryParams.length};
+  `
+  console.log(queryString);
+  console.log('---------');
+  console.log(queryParams);
+  
   return pool
-    .query(
-      `SELECT *
-      FROM properties
-      LIMIT $1`, [limit])
+    .query(queryString, queryParams)
     .then((result) => result.rows)
     .catch((err) => console.log(err.message));
 }
 exports.getAllProperties = getAllProperties;
-
+// getAllProperties( { 
+//   city: 'Vancouver',
+//   minimum_price_per_night: 10000,
+//   maximum_price_per_night: 30000,
+//   minimum_rating: 4
+// }, 5);
+getAllProperties({ owner_id: 1 }, 5);
 
 /**
  * Add a property to the database
