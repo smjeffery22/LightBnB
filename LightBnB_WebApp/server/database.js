@@ -105,21 +105,6 @@ getAllReservations(1);
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function(options, limit = 10) {
-  // if (options.owner_id) {
-  //   const queryString = `
-  //   SELECT *
-  //   FROM properties
-  //   WHERE owner_id = $1
-  //   LIMIT $2`;
-  //   const values = [options.owner_id, limit];
-
-  //   return pool
-  //     .query(queryString, values)
-  //     .then((res) => res.rows[0])
-  //     .catch((err) => console.log(err.message));
-  // }
-  
-  
   const queryParams = [];
 
   let queryString = `
@@ -159,11 +144,7 @@ const getAllProperties = function(options, limit = 10) {
   queryParams.push(limit);
   queryString += `
     ORDER BY p.cost_per_night
-    LIMIT $${queryParams.length};
-  `
-  console.log(queryString);
-  console.log('---------');
-  console.log(queryParams);
+    LIMIT $${queryParams.length};`
   
   return pool
     .query(queryString, queryParams)
@@ -171,13 +152,6 @@ const getAllProperties = function(options, limit = 10) {
     .catch((err) => console.log(err.message));
 }
 exports.getAllProperties = getAllProperties;
-// getAllProperties( { 
-//   city: 'Vancouver',
-//   minimum_price_per_night: 10000,
-//   maximum_price_per_night: 30000,
-//   minimum_rating: 4
-// }, 5);
-getAllProperties({ owner_id: 1 }, 5);
 
 /**
  * Add a property to the database
@@ -185,9 +159,18 @@ getAllProperties({ owner_id: 1 }, 5);
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  const queryString = `
+  INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+  RETURNING *`
+  const values = [property.owner_id, property.title, property.description, property.thumbnail_photo_url, property.cover_photo_url, property.cost_per_night, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms, property.country, property.street, property.city, property.province, property.post_code]
+
+  return pool
+    .query(queryString, values)
+    .then((res) => console.log(res.rows))
+    .catch((err) => console.log(err.message));
 }
 exports.addProperty = addProperty;
+// addProperty(1, 'Speed lamp', 'description', 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg?auto=compress&cs=tinysrgb&h=350', 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg', 93061, 6, 4, 8, 'Canada', '536 Namsub Highway', 'Sotboske', 'Quebec', 28142, true),
+// (2, 'Speed lamp', 'description', 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg?auto=compress&cs=tinysrgb&h=350', 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg', 93061, 6, 4, 8, 'Canada', '536 Namsub Highway', 'Sotboske', 'Quebec', 28142, true),
+// (3, 'Speed lamp', 'description', 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg?auto=compress&cs=tinysrgb&h=350', 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg', 93061, 6, 4, 8, 'Canada', '536 Namsub Highway', 'Sotboske', 'Quebec', 28142);
